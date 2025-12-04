@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, LineChart, PlusSquare, Menu, X, Gem, ChevronRight, ChevronLeft } from 'lucide-react';
+import { LayoutDashboard, LineChart, PlusSquare, Menu, X, Gem, Layers } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -14,6 +14,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'market', label: 'Mercado', icon: LineChart },
+    { id: 'operations', label: 'Operações', icon: Layers },
     { id: 'new-operation', label: 'Nova Operação', icon: PlusSquare },
   ];
 

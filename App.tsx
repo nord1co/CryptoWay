@@ -3,14 +3,16 @@ import { Layout } from './components/Layout';
 import { Market } from './components/Market';
 import { TransactionForm } from './components/TransactionForm';
 import { Dashboard } from './components/Dashboard';
+import { Operations } from './components/Operations';
 import { INITIAL_COINS } from './constants';
-import { Coin, Transaction, PortfolioItem, TransactionType } from './types';
+import { Coin, Transaction, PortfolioItem, TransactionType, WatchlistItem } from './types';
 import { simulateMarketUpdate } from './services/marketService';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [coins, setCoins] = useState<Coin[]>(INITIAL_COINS);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
 
   // Simulate Live Market Data
   useEffect(() => {
@@ -49,11 +51,11 @@ const App: React.FC = () => {
         item.averageBuyPrice = totalAmount > 0 ? totalCost / totalAmount : 0;
       } else {
         // SELL logic (simplified FIFO/Average for this demo)
-        // Reduces amount, realizes profit/loss proportionally, but keeps avg buy price same for remaining?
-        // Simple approach: reduce quantity and invested amount proportionally
+        // Reduces amount, realizes profit/loss proportionally
         const ratio = tx.amount / item.totalAmount;
         item.totalAmount -= tx.amount;
-        item.totalInvested -= (item.totalInvested * ratio); 
+        // Reduce invested capital proportionally to amount sold to maintain average price on remaining
+        item.totalInvested -= (item.totalInvested * (tx.amount / (item.totalAmount + tx.amount))); 
       }
     });
 
@@ -83,7 +85,33 @@ const App: React.FC = () => {
       id: crypto.randomUUID()
     };
     setTransactions(prev => [...prev, transaction]);
-    setActiveTab('dashboard'); // Redirect to dashboard after adding
+    setActiveTab('operations'); // Redirect to operations to see the change
+  };
+
+  const handleClosePosition = (item: PortfolioItem) => {
+    const coin = coins.find(c => c.id === item.coinId);
+    if (!coin) return;
+
+    if (window.confirm(`Tem certeza que deseja vender toda sua posição de ${coin.name}?`)) {
+        handleAddTransaction({
+            coinId: item.coinId,
+            exchange: 'System', // Default for auto-close
+            type: TransactionType.SELL,
+            amount: item.totalAmount,
+            pricePerCoin: coin.currentPrice,
+            fee: 0,
+            date: new Date().toISOString().split('T')[0],
+            notes: 'Posição encerrada automaticamente via Dashboard de Operações.'
+        });
+    }
+  };
+
+  const handleAddToWatchlist = (item: WatchlistItem) => {
+    setWatchlist(prev => [...prev, item]);
+  };
+
+  const handleRemoveFromWatchlist = (id: string) => {
+    setWatchlist(prev => prev.filter(i => i.id !== id));
   };
 
   const renderContent = () => {
@@ -92,6 +120,18 @@ const App: React.FC = () => {
         return <Market coins={coins} />;
       case 'new-operation':
         return <TransactionForm coins={coins} onAddTransaction={handleAddTransaction} />;
+      case 'operations':
+        return (
+            <Operations 
+                transactions={transactions} 
+                portfolio={portfolio} 
+                coins={coins} 
+                watchlist={watchlist}
+                onClosePosition={handleClosePosition}
+                onAddToWatchlist={handleAddToWatchlist}
+                onRemoveFromWatchlist={handleRemoveFromWatchlist}
+            />
+        );
       case 'dashboard':
       default:
         return <Dashboard portfolio={portfolio} coins={coins} transactions={transactions} />;

@@ -34,6 +34,14 @@ export interface PortfolioItem {
   profitPercent: number;
 }
 
+export interface WatchlistItem {
+  id: string;
+  coinId: string;
+  targetPrice: number;
+  condition: 'ABOVE' | 'BELOW'; // Alert when price is above or below target
+  notes?: string;
+}
+
 export interface MarketState {
   coins: Coin[];
   lastUpdated: Date;
